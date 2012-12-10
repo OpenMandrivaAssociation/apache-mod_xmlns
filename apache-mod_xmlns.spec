@@ -6,7 +6,7 @@
 Summary:	Adds XML Namespace processing to the Apache Webserver
 Name:		apache-%{mod_name}
 Version:	0.97
-Release:	%mkrel 15
+Release:	15
 Group:		System/Servers
 License:	GPL
 URL:		http://apache.webthing.com/mod_xmlns/
@@ -24,7 +24,6 @@ Requires:	apache-conf >= 2.2.0
 Requires:	apache >= 2.2.0
 BuildRequires:	apache-devel >= 2.2.0
 BuildRequires:	file
-BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 %description
 mod_xmlns adds XML Namespace support to Apache, and may form the basis of
@@ -56,10 +55,9 @@ find . -type f|xargs file|grep 'CRLF'|cut -d: -f1|xargs perl -p -i -e 's/\r//'
 find . -type f|xargs file|grep 'text'|cut -d: -f1|xargs perl -p -i -e 's/\r//'
 
 %build
-%{_sbindir}/apxs -c %{mod_name}.c
+%{_bindir}/apxs -c %{mod_name}.c
 
 %install
-[ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
 
 install -d %{buildroot}%{_sysconfdir}/httpd/modules.d
 install -d %{buildroot}%{_libdir}/apache-extramodules
@@ -82,14 +80,83 @@ if [ "$1" = "0" ]; then
 fi
 
 %clean
-[ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
 
 %files
-%defattr(-,root,root)
 %doc README
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/httpd/modules.d/%{mod_conf}
 %attr(0755,root,root) %{_libdir}/apache-extramodules/%{mod_so}
 
 %files devel
-%defattr(-,root,root)
 %attr(0644,root,root) %{_includedir}/xmlns.h
+
+
+%changelog
+* Sat Feb 11 2012 Oden Eriksson <oeriksson@mandriva.com> 0.97-15mdv2012.0
++ Revision: 773242
+- rebuild
+
+* Tue May 24 2011 Oden Eriksson <oeriksson@mandriva.com> 0.97-14
++ Revision: 678447
+- mass rebuild
+
+* Sun Oct 24 2010 Oden Eriksson <oeriksson@mandriva.com> 0.97-13mdv2011.0
++ Revision: 588102
+- rebuild
+
+* Mon Mar 08 2010 Oden Eriksson <oeriksson@mandriva.com> 0.97-12mdv2010.1
++ Revision: 516281
+- rebuilt for apache-2.2.15
+
+* Sat Aug 01 2009 Oden Eriksson <oeriksson@mandriva.com> 0.97-11mdv2010.0
++ Revision: 406688
+- rebuild
+
+* Tue Jan 06 2009 Oden Eriksson <oeriksson@mandriva.com> 0.97-10mdv2009.1
++ Revision: 326279
+- rebuild
+
+* Mon Jul 14 2008 Oden Eriksson <oeriksson@mandriva.com> 0.97-9mdv2009.0
++ Revision: 235135
+- rebuild
+
+* Thu Jun 05 2008 Oden Eriksson <oeriksson@mandriva.com> 0.97-8mdv2009.0
++ Revision: 215678
+- fix rebuild
+
+* Fri Mar 07 2008 Oden Eriksson <oeriksson@mandriva.com> 0.97-7mdv2008.1
++ Revision: 181988
+- rebuild
+
+  + Olivier Blin <blino@mandriva.org>
+    - restore BuildRoot
+
+  + Thierry Vignaud <tv@mandriva.org>
+    - kill re-definition of %%buildroot on Pixel's request
+
+* Mon Oct 01 2007 Oden Eriksson <oeriksson@mandriva.com> 0.97-6mdv2008.1
++ Revision: 94139
+- rebuilt due to missing packages
+
+* Mon Oct 01 2007 Oden Eriksson <oeriksson@mandriva.com> 0.97-5mdv2008.0
++ Revision: 94135
+- bunzip the sources
+
+* Sat Sep 08 2007 Oden Eriksson <oeriksson@mandriva.com> 0.97-4mdv2008.0
++ Revision: 82707
+- rebuild
+
+
+* Sat Mar 10 2007 Oden Eriksson <oeriksson@mandriva.com> 0.97-3mdv2007.1
++ Revision: 140780
+- rebuild
+
+* Thu Nov 09 2006 Oden Eriksson <oeriksson@mandriva.com> 0.97-2mdv2007.0
++ Revision: 79562
+- Import apache-mod_xmlns
+
+* Tue Jul 18 2006 Oden Eriksson <oeriksson@mandriva.com> 0.97-2mdv2007.0
+- fix deps
+
+* Tue Jul 18 2006 Oden Eriksson <oeriksson@mandriva.com> 0.97-1mdv2007.0
+- initial Mandriva package
+

@@ -1,0 +1,227 @@
+mod_xmlns
+
+   Current  version:  0.97  (Dec  13^th 2004) - Add XMLNSDefaultNamespace
+   directive.
+
+   mod_xmlns adds XML Namespace support to Apache, and may form the basis
+   of  XML-driven  publishing systems. It runs as an output filter, so it
+   works automatically with any content generator.
+
+   From  Version  0.9  (May  1^st  2004)  it  has moved from experimental
+   prototype  to provisionally stable (i.e. there's nothing that is known
+   to  need  changing  before  it  can  be  declared stable). This hasn't
+   entirely held, as the API has had to be updated. Now the API is shared
+   with mod_publisher, and is being documented.
+
+The Namespace API
+
+   The basic API for Namespace implementations is:
+    1. Create event handlers for your namespace.
+    2. Declare your handlers in a struct xmlns.
+    3. Make  it  available  to  mod_xmlns using ap_register_provider with
+       provider_group=xmlns, provider_name=your_namespace and your choice
+       of version string (see the XMLNSUseNamespace directive).
+
+   The   API  is  documented  in  xmlns.h.  A  programming  guide  is  in
+   preparation.
+
+Configuration Directives
+
+   mod_xmlns  implements  namespaces  as  an  output filter, so the first
+   configuration  directive required to use namespaces is to insert it in
+   the   processing   chain  with  AddOutputFilter,  SetOutputFilter,  or
+   AddOutputFilterByType. The filter name is xmlns.
+
+Directives implemented by mod_xmlns
+
+   XMLNSUseNamespace
+          Syntax: XMLNSUseNamespace URI [on|off] [version]
+
+          Activates  or  deactivates  processing for namespace URI, using
+          the processor defined in the version paramater.
+
+   XMLNSDefaultNamespace
+          Syntax: XMLNSDefaultNamespace URI
+
+          Sets  a  URI  to  use  as  default namespace (for un-namespaced
+          elements).
+
+   XMLNSCommentHandlers
+          Syntax: XMLNSCommentHandlers on|off
+
+          Turns   on   or  off  comment  handlers  defined  in  namespace
+          implementations. Default is On.
+
+   XMLNSCommentRemove
+          Syntax: XMLNSCommentRemove on|off
+
+          Determines  whether to strip comments that are not processed by
+          any  namespace  handler.  Default  is  to pass comments through
+          intact.
+
+Example: Implementing a Namespace
+
+   A  very  simple  example  namespace  processor  is provided for XHTML,
+   acting on any elements in namespace http://www.w3.org/1999/xhtml:
+
+Purpose
+
+   This  XHTML  handler  serves  to  ensure XHTML is fully compliant with
+   Appendix  C,  and  can be served to current and legacy Web browsers as
+   text/html.  This  could  be  used  as  an  output filter for XML-based
+   publishing   systems   that   don't   explicitly  support  Appendix  C
+   compatibility.
+
+   By  registering  a  comment  handler,  we  can  combine the above with
+   implementing Server-Side Includes (SSI) in XHTML.
+
+Implementation
+
+   Firstly,  we  create a set of callbacks. For XHTML, we will need Start
+   Element  and  End  Element.  An additional handler for Comments may be
+   used to implement SSI.
+#include "xmlns.h"
+#include <http_config.h>
+#include <ap_provider.h>
+
+#define XHTML10 "http://www.w3.org/1999/xhtml"
+
+static apr_status_t hstart(
+        xmlns_public* ctx,
+        const parsedname* name,
+        const xml_attr_t* atts) {
+
+   Print  the element, attributes and (for the root element) xmlns in the
+   default namespace.
+
+   IF  the element is defined as empty, append an Appendix C space before
+   " />". If it is not defined as empty, do not use this abbreviated form
+   even if this instance of the element is empty.
+
+   Also some basic housekeeping - see the source.
+  return APR_SUCCESS ; /* suppress the default handler doing anything */
+}
+static apr_status_t hend(
+        xmlns_public* ctx,
+        const parsedname* name) {
+  if ( element is not defined as empty ) {
+    print end tag for element ;
+  }
+  return APR_SUCCESS ;
+}
+static apr_status_t hcomment(
+        xmlns_public* ctx,
+        const xml_char_t* data) {
+/* Dispatch SSI processing based on the first word of the comment.
+  Return status code according to whether anything interesting happened. */
+}
+
+   Having  defined the handlers, we now create an xmlns struct containing
+   them. This is slightly changed from the previous implementation.
+static xmlns xmlns_xhtml10 = {
+        hstart ,        /* StartElement Handler         */
+        hend ,          /* EndElement Handler           */
+        NULL ,          /* StartNamespace Handler       */
+        NULL ,          /* EndNamespace Handler         */
+        "#",            /* Comment Prefix               */
+        hcomment        /* Comment Handler              */
+} ;
+
+   Finally,  we  declare  the  basic  Apache  module  struct.  We use the
+   ap_provider  API  to make our processor available to mod_xmlns for the
+   XHTML 1.0 namespace:
+static void xhtml_hooks(apr_pool_t* pool) {
+  ap_register_provider(pool, "xmlns", XHTML10 , "1.0", &xmlns_xhtml10) ;
+}
+module AP_MODULE_DECLARE_DATA xhtml10_module = {
+        STANDARD20_MODULE_STUFF,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        xhtml_hooks
+} ;
+
+The Data Structures
+
+   The data structs referenced above are defined in xmlns.h.
+
+Configuration
+
+   The  following  three directives will ensure you can send .xhtml files
+   as text/html without breaking in browsers:
+
+   LoadModule xmlns_module modules/mod_xmlns.so
+          LoadModule xhtml_module modules/mod_xhtml.so
+          Standard commands to load the modules.
+
+   UseNamespace http://www.w3.org/1999/xhtml on 1.0
+          Turn this handler on for namespace
+          http://www.w3.org/1999/xhtml.
+
+   AddOutputFilter xmlns .xhtml
+          Turn on namespace processing for .xhtml files.
+
+Applications
+
+   Some  examples  of  the  kind  of  applications  enabled  by mod_xmlns
+   include:
+
+Edge Side Includes
+
+   A parser for namespace http://www.edge-delivery.org/esi/1.0 implements
+   the  ESI Language Specification 1.0. Implementation is not updated for
+   the current API.
+
+Annotations Module
+
+   Implementing collaborative authoring and end-user notes as annotations
+   in  a  document,  in  the  manner  of blogged comments but attached to
+   specific sections of a source document.
+
+Google APIs
+
+   May happen when I can find some time.
+
+JSP 2.0
+
+   I don't know if this will work, but since JSP 2.0 is defined as an XML
+   namespace,  it  should in principle be possible. Together with mod_gcj
+   it  could  offer  a  full JSP implementation within Apache, dispensing
+   with the overhead of a Java backend.
+
+Limitations
+
+   mod_xmlns  is a minimalist SAX parser, and has no support for DTDs and
+   external  entities,  nor does it offer much scope for sanity checks on
+   markup  being  processed.  A  compatible  but  richer companion module
+   mod_publisher is in development.
+
+Availability
+
+Current
+
+   The  API  is undergoing updates (documentation to follow). See current
+   svn  for  the  state  of  the art. Updates include rationalisation and
+   additional  features:  principally the ability for namespace providers
+   to register handlers for XML characters and CDATA.
+
+Old Stable Version
+
+   (this  is  available  in  svn  release  22,  and  will work with xmlns
+   software developed between 2004 and early 2006).
+
+   mod_xmlns.c  source  code,  the  xmlns.h  header  file  for  namespace
+   implementations  and the mod_xhtml XHTML processor are available under
+   the GNU General Public License (GPL).
+
+   In  the  event  of  this  module being accepted by the Apache Software
+   Foundation, it will be re-licensed under the Apache License.
+
+   The  old mod_xmlns is still available, and includes the ESI 1.0 parser
+   (not yet updated).
+
+   Please contact the developer regarding support for other namespaces.
+
+   Up * Home * Contact * Webﬁing * Apache
