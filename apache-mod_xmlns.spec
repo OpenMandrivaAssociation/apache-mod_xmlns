@@ -9,7 +9,7 @@ Version:	0.97
 Release:	16
 Group:		System/Servers
 License:	GPL
-URL:		http://apache.webthing.com/mod_xmlns/
+URL:		https://apache.webthing.com/mod_xmlns/
 # there is no official tar ball
 # http://apache.webthing.com/svn/apache/filters/xmlns/
 Source0:	http://apache.webthing.com/svn/apache/filters/xmlns/mod_xmlns.c
